@@ -18,96 +18,172 @@ if (navToggle && mobileNav) {
   });
 }
 
-// Stump price slider
-// Formula: per-stump base price = max($250 minimum, $10 x diameter in inches).
-// Each tier applies a multiplier on top of that base for the extra labor/haul-away/mulch work.
+// ---------------------------------------------------------------------------
+// Pricing calculator
+// Price for a visit = total inches (all stumps) x $10 x tier multiplier,
+// then raised to that tier's minimum. Minimums apply per visit, not per stump.
+// Jobs that need a call instead of online booking:
+//   - more than 3 stumps
+//   - any stump over 48"
+//   - more than 30 miles from Spokane Valley
+// ---------------------------------------------------------------------------
 const RATE_PER_INCH = 10;
-const MINIMUM_PRICE = 250;
-const TIER_MULTIPLIER = {
-  basic: 1,
-  cleanup: 1.15,
-  full: 1.35
+const TIERS = {
+  good:   { name: 'Good',   multiplier: 1.00, minimum: 250 },
+  better: { name: 'Better', multiplier: 1.15, minimum: 275 },
+  best:   { name: 'Best',   multiplier: 1.35, minimum: 300 }
+};
+const MAX_STUMPS_ONLINE = 3;
+const MAX_DIAMETER_ONLINE = 48;
+const SLIDER_MIN = 4;
+const SLIDER_MAX = 60;
+
+const state = {
+  stumps: [24],
+  manyStumps: false,
+  distance: 'near',
+  tier: 'better'
 };
 
-const diameterSlider = document.getElementById('diameter-slider');
-const diameterValue = document.getElementById('diameter-value');
-const priceTags = document.querySelectorAll('.price-tag[data-tier]');
+const stumpList = document.getElementById('stump-list');
+const addStumpBtn = document.getElementById('add-stump');
+const manyStumpsBtn = document.getElementById('many-stumps');
+const jobSummary = document.getElementById('job-summary');
+const jobNote = document.getElementById('job-note');
+const callNotice = document.getElementById('call-notice');
+const callNoticeReason = document.getElementById('call-notice-reason');
+const priceCards = document.querySelectorAll('.price-card[data-tier]');
+const bookSelectionValue = document.getElementById('book-selection-value');
 
 function formatCurrency(n) {
   return n.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
 }
 
-function updatePrices() {
-  const diameter = Math.max(1, parseInt(diameterSlider.value, 10) || 0);
-  if (diameterValue) diameterValue.textContent = diameter;
-
-  const base = Math.max(MINIMUM_PRICE, RATE_PER_INCH * diameter);
-  priceTags.forEach(tag => {
-    const tier = tag.getAttribute('data-tier');
-    const multiplier = TIER_MULTIPLIER[tier] ?? 1;
-    tag.textContent = formatCurrency(Math.round(base * multiplier));
-  });
+function priceFor(tierKey, totalInches) {
+  const tier = TIERS[tierKey];
+  return Math.max(tier.minimum, Math.round(totalInches * RATE_PER_INCH * tier.multiplier));
 }
 
-if (diameterSlider) {
-  diameterSlider.addEventListener('input', updatePrices);
-  updatePrices();
+function callReasons() {
+  const reasons = [];
+  if (state.manyStumps) reasons.push('Jobs with more than 3 stumps are quoted individually — ask about our full-day rate.');
+  if (state.stumps.some(d => d > MAX_DIAMETER_ONLINE)) reasons.push(`Stumps over ${MAX_DIAMETER_ONLINE}″ need an on-site look before we can price them.`);
+  if (state.distance === 'far') reasons.push('Jobs more than 30 miles from Spokane Valley may include a trip charge.');
+  return reasons;
 }
 
-// Keep the "interested in" tier on the contact form in sync when arriving from a pricing card
-const tierSelectField = document.getElementById('tier-select');
-if (tierSelectField) {
-  document.querySelectorAll('.price-card').forEach(card => {
-    const cta = card.querySelector('a.btn');
-    const tag = card.querySelector('.price-tag[data-tier]');
-    if (cta && tag) {
-      cta.addEventListener('click', () => {
-        tierSelectField.value = tag.getAttribute('data-tier');
+function renderStumps() {
+  stumpList.innerHTML = '';
+  state.stumps.forEach((diameter, i) => {
+    const row = document.createElement('div');
+    row.className = 'stump-row';
+    const id = `stump-${i}`;
+    row.innerHTML = `
+      <label for="${id}" class="stump-label">Stump ${i + 1}</label>
+      <input type="range" id="${id}" min="${SLIDER_MIN}" max="${SLIDER_MAX}" step="1" value="${diameter}" aria-label="Stump ${i + 1} diameter in inches">
+      <span class="stump-value"><input type="number" min="1" max="99" value="${diameter}" aria-label="Stump ${i + 1} diameter in inches, exact">″</span>
+      ${state.stumps.length > 1 ? `<button type="button" class="stump-remove" aria-label="Remove stump ${i + 1}">×</button>` : '<span class="stump-remove-spacer"></span>'}
+    `;
+    const range = row.querySelector('input[type="range"]');
+    const number = row.querySelector('input[type="number"]');
+    range.addEventListener('input', () => {
+      state.stumps[i] = parseInt(range.value, 10);
+      number.value = range.value;
+      update();
+    });
+    number.addEventListener('input', () => {
+      const v = parseInt(number.value, 10);
+      if (!v || v < 1) return;
+      state.stumps[i] = v;
+      range.value = Math.min(Math.max(v, SLIDER_MIN), SLIDER_MAX);
+      update();
+    });
+    const remove = row.querySelector('.stump-remove');
+    if (remove) {
+      remove.addEventListener('click', () => {
+        state.stumps.splice(i, 1);
+        renderStumps();
+        update();
       });
     }
+    stumpList.appendChild(row);
   });
+
+  addStumpBtn.hidden = state.stumps.length >= MAX_STUMPS_ONLINE;
+  manyStumpsBtn.textContent = state.manyStumps ? '✓ I have 4 or more stumps' : 'I have 4 or more stumps';
+  manyStumpsBtn.setAttribute('aria-pressed', String(state.manyStumps));
 }
 
-// Contact form submission (Formspree-compatible: works with any endpoint that accepts
-// a normal POST and responds to fetch — swap the form's `action` in index.html to your
-// own Formspree endpoint after creating a free account at formspree.io)
-const quoteForm = document.getElementById('quote-form');
-if (quoteForm) {
-  quoteForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const submitBtn = quoteForm.querySelector('.form-submit');
-    const originalLabel = submitBtn.textContent;
-    submitBtn.disabled = true;
-    submitBtn.textContent = 'Sending…';
+function update() {
+  const totalInches = state.stumps.reduce((sum, d) => sum + d, 0);
+  const count = state.stumps.length;
+  const reasons = callReasons();
+  const needsCall = reasons.length > 0;
 
-    const existingMsg = quoteForm.querySelector('.form-success, .form-error');
-    if (existingMsg) existingMsg.remove();
+  jobSummary.textContent = state.manyStumps
+    ? '4+ stumps'
+    : `${count} stump${count > 1 ? 's' : ''} · ${totalInches}″ total`;
+  jobNote.textContent = count > 1
+    ? `${state.stumps.map(d => d + '″').join(' + ')} = ${totalInches}″. Minimum charge applies to the whole visit.`
+    : 'Minimum charge applies to the whole visit, not each stump.';
 
-    try {
-      const response = await fetch(quoteForm.action, {
-        method: 'POST',
-        body: new FormData(quoteForm),
-        headers: { Accept: 'application/json' }
-      });
+  callNotice.hidden = !needsCall;
+  callNoticeReason.textContent = reasons.join(' ');
+  document.body.classList.toggle('needs-call', needsCall);
 
-      const msg = document.createElement('p');
-      if (response.ok) {
-        msg.className = 'form-success';
-        msg.textContent = "Thanks! Your quote request is in — I'll get back to you shortly.";
-        quoteForm.reset();
+  priceCards.forEach(card => {
+    const tierKey = card.dataset.tier;
+    const amount = card.querySelector('.price-amount');
+    const btn = card.querySelector('.tier-btn');
+    const price = priceFor(tierKey, totalInches);
+    const raw = Math.round(totalInches * RATE_PER_INCH * TIERS[tierKey].multiplier);
+    amount.textContent = needsCall ? 'Call' : formatCurrency(price);
+    card.querySelector('.price-min').textContent = needsCall
+      ? 'for an estimate'
+      : raw < TIERS[tierKey].minimum ? `${formatCurrency(TIERS[tierKey].minimum)} minimum applied` : `${formatCurrency(TIERS[tierKey].minimum)} minimum`;
+    btn.textContent = needsCall ? 'Call for Estimate' : `Book ${TIERS[tierKey].name}`;
+    card.classList.toggle('is-selected', tierKey === state.tier);
+  });
+
+  const tier = TIERS[state.tier];
+  bookSelectionValue.textContent = needsCall
+    ? 'Your job needs a quick call — (509) 479-4685'
+    : `${tier.name} · ${count} stump${count > 1 ? 's' : ''} · ${totalInches}″ total · ${formatCurrency(priceFor(state.tier, totalInches))}`;
+}
+
+if (stumpList) {
+  addStumpBtn.addEventListener('click', () => {
+    if (state.stumps.length >= MAX_STUMPS_ONLINE) return;
+    state.stumps.push(12);
+    renderStumps();
+    update();
+  });
+
+  manyStumpsBtn.addEventListener('click', () => {
+    state.manyStumps = !state.manyStumps;
+    renderStumps();
+    update();
+  });
+
+  document.querySelectorAll('input[name="distance"]').forEach(radio => {
+    radio.addEventListener('change', () => {
+      state.distance = radio.value;
+      update();
+    });
+  });
+
+  priceCards.forEach(card => {
+    card.querySelector('.tier-btn').addEventListener('click', () => {
+      state.tier = card.dataset.tier;
+      update();
+      if (callReasons().length) {
+        window.location.href = 'tel:+15094794685';
       } else {
-        msg.className = 'form-error';
-        msg.textContent = "That didn't go through. Please call or text (509) 479-4685 instead.";
+        document.getElementById('book').scrollIntoView({ behavior: 'smooth' });
       }
-      quoteForm.appendChild(msg);
-    } catch (err) {
-      const msg = document.createElement('p');
-      msg.className = 'form-error';
-      msg.textContent = "That didn't go through. Please call or text (509) 479-4685 instead.";
-      quoteForm.appendChild(msg);
-    } finally {
-      submitBtn.disabled = false;
-      submitBtn.textContent = originalLabel;
-    }
+    });
   });
+
+  renderStumps();
+  update();
 }
