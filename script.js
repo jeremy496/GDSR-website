@@ -187,3 +187,23 @@ if (stumpList) {
   renderStumps();
   update();
 }
+
+// Booking calendar fallback
+// Safari (and iPhones) can block the embedded GoHighLevel calendar, leaving a blank box.
+// The calendar posts a "highlevel.setHeight" message once it renders; if that never
+// arrives, point people to the full-page booking link instead.
+const bookFallback = document.getElementById('book-fallback');
+if (bookFallback) {
+  let calendarRendered = false;
+  window.addEventListener('message', (e) => {
+    if (!/^https:\/\/([a-z0-9-]+\.)*leadconnectorhq\.com$/.test(e.origin)) return;
+    const type = Array.isArray(e.data) ? e.data[0] : e.data;
+    if (type === 'highlevel.setHeight') calendarRendered = true;
+  });
+  setTimeout(() => {
+    if (calendarRendered) return;
+    bookFallback.classList.add('is-stuck');
+    document.getElementById('book-fallback-text').textContent =
+      "The calendar didn't load in this browser — tap below to book on its own page.";
+  }, 8000);
+}
