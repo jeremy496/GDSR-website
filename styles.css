@@ -150,11 +150,8 @@ main .accent { color: var(--orange-dark); }
   margin-right: auto;
 }
 .brand-mark {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 2px solid var(--orange);
+  width: auto;
+  height: 56px;
 }
 .brand-text {
   display: flex;
@@ -835,7 +832,7 @@ main .accent { color: var(--orange-dark); }
 
 @media (max-width: 560px) {
   .header-inner { gap: 10px; }
-  .brand-mark { width: 40px; height: 40px; }
+  .brand-mark { height: 48px; }
   .brand-line-1, .brand-line-2 { font-size: .92rem; }
   .btn-compact { padding: 8px 14px; font-size: .85rem; }
   .wrap { padding: 0 16px; }
@@ -856,7 +853,7 @@ main .accent { color: var(--orange-dark); }
   .header-inner { gap: 8px; }
   .phone-link { display: none; }
   .brand-line-1, .brand-line-2 { font-size: .82rem; }
-  .brand-mark { width: 36px; height: 36px; }
+  .brand-mark { height: 44px; }
   .btn-compact { padding: 8px 12px; font-size: .8rem; }
 }
 
