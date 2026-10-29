@@ -630,10 +630,31 @@ main .accent { color: var(--orange-dark); }
   align-items: center;
 }
 .meet-leo-art img {
-  border-radius: var(--radius);
-  max-width: 320px;
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+  max-width: 400px;
   margin: 0 auto;
+  /* The photo is a round badge on a black square; show only the circle */
+  clip-path: circle(48.5% at 50% 50%);
+  filter: drop-shadow(0 16px 30px rgba(35,48,47,.18));
 }
+.team-chart {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 24px;
+  display: grid;
+  gap: 10px;
+}
+.team-chart li {
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px 16px;
+  font-size: .95rem;
+}
+.team-chart strong { display: block; color: var(--ink); }
 .eyebrow-dark { color: var(--orange-dark); }
 
 /* Service area */
@@ -794,7 +815,7 @@ main .accent { color: var(--orange-dark); }
   .calc { grid-template-columns: 1fr; }
   .meet-leo-inner,
   .service-area-inner { grid-template-columns: 1fr; }
-  .meet-leo-art img { max-width: 240px; }
+  .meet-leo-art img { max-width: 300px; }
   .service-area-copy h2 { text-align: center; }
   .service-area-copy .lead, .area-note { text-align: center; }
   body { padding-bottom: 76px; }
