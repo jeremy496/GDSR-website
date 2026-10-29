@@ -29,9 +29,9 @@ if (navToggle && mobileNav) {
 // ---------------------------------------------------------------------------
 const RATE_PER_INCH = 10;
 const TIERS = {
-  good:   { name: 'Good',   multiplier: 1.00, minimum: 250 },
-  better: { name: 'Better', multiplier: 1.15, minimum: 275 },
-  best:   { name: 'Best',   multiplier: 1.35, minimum: 300 }
+  good:   { name: 'Good',   service: 'Basic Grind',        multiplier: 1.00, minimum: 250 },
+  better: { name: 'Better', service: 'Grind + Cleanup',    multiplier: 1.15, minimum: 275 },
+  best:   { name: 'Best',   service: 'Grind, Haul & Fill', multiplier: 1.35, minimum: 300 }
 };
 const MAX_STUMPS_ONLINE = 3;
 const MAX_DIAMETER_ONLINE = 48;
@@ -149,6 +149,45 @@ function update() {
   bookSelectionValue.textContent = needsCall
     ? 'Your job needs a quick call — (509) 479-4685'
     : `${tier.name} · ${count} stump${count > 1 ? 's' : ''} · ${totalInches}″ total · ${formatCurrency(priceFor(state.tier, totalInches))}`;
+
+  const sizes = count > 1 ? `${state.stumps.map(d => d + '″').join(' + ')} = ${totalInches}″` : `${totalInches}″`;
+  updateBookingEstimate(
+    `${tier.name} (${tier.service}) · ${count} stump${count > 1 ? 's' : ''}: ${sizes} · ` +
+    `${state.distance === 'far' ? 'more than' : 'within'} 30 mi of Spokane Valley · ` +
+    (needsCall ? `needs a call (${reasons.join(' ')})` : `est. ${formatCurrency(priceFor(state.tier, totalInches))}`)
+  );
+}
+
+// Send the estimate to the GoHighLevel booking form as the hidden "Website Estimate"
+// field (query key website_estimate), so it's saved on the contact with the booking.
+// Reloading the calendar resets it, so wait until the visitor stops adjusting the
+// calculator, and never reload once they've clicked into the calendar.
+const BOOKING_URL = 'https://api.leadconnectorhq.com/widget/booking/4DfR5LlIdesK0LKQRszZ';
+const bookingFrame = document.querySelector('.book-frame iframe');
+const bookingLink = document.querySelector('.book-fallback a');
+let bookingFrameTimer;
+let bookingFrameInitialized = false;
+let pendingBookingUrl = null;
+
+function loadPendingBookingUrl() {
+  clearTimeout(bookingFrameTimer);
+  if (!pendingBookingUrl || document.activeElement === bookingFrame) return;
+  bookingFrame.src = pendingBookingUrl;
+  pendingBookingUrl = null;
+}
+
+function updateBookingEstimate(text) {
+  const url = `${BOOKING_URL}?website_estimate=${encodeURIComponent(text)}`;
+  if (bookingLink) bookingLink.href = url;
+  if (!bookingFrame || bookingFrame.src === url) return;
+  pendingBookingUrl = url;
+  if (!bookingFrameInitialized) {
+    bookingFrameInitialized = true;
+    loadPendingBookingUrl();
+  } else {
+    clearTimeout(bookingFrameTimer);
+    bookingFrameTimer = setTimeout(loadPendingBookingUrl, 1200);
+  }
 }
 
 if (stumpList) {
@@ -176,6 +215,7 @@ if (stumpList) {
     card.querySelector('.tier-btn').addEventListener('click', () => {
       state.tier = card.dataset.tier;
       update();
+      loadPendingBookingUrl();
       if (callReasons().length) {
         window.location.href = 'tel:+15094794685';
       } else {
