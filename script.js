@@ -18,6 +18,21 @@ if (navToggle && mobileNav) {
   });
 }
 
+// Hero video: pause/play button, and stay paused for people who prefer reduced motion
+const heroVideo = document.querySelector('.hero-video video');
+const heroVideoToggle = document.querySelector('.hero-video-toggle');
+if (heroVideo && heroVideoToggle) {
+  const syncToggle = () => {
+    heroVideoToggle.textContent = heroVideo.paused ? '▶' : '❚❚';
+    heroVideoToggle.setAttribute('aria-label', heroVideo.paused ? 'Play video' : 'Pause video');
+  };
+  heroVideoToggle.addEventListener('click', () => { heroVideo.paused ? heroVideo.play() : heroVideo.pause(); });
+  heroVideo.addEventListener('play', syncToggle);
+  heroVideo.addEventListener('pause', syncToggle);
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) heroVideo.pause();
+  syncToggle();
+}
+
 // ---------------------------------------------------------------------------
 // Pricing calculator
 // Price for a visit = total inches (all stumps) x $10 x tier multiplier,
