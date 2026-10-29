@@ -770,7 +770,6 @@ main .accent { color: var(--orange-dark); }
   padding: 40px 0;
 }
 .footer-inner { text-align: center; }
-.footer-logo { height: 44px; margin: 0 auto 16px; }
 .footer-meta { font-size: .9rem; margin: 0 0 6px; }
 .footer-meta a { color: #fff; }
 .footer-copy { font-size: .85rem; color: rgba(255,255,255,.6); margin: 0; }
