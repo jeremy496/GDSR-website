@@ -152,14 +152,18 @@ function update() {
 
   const sizes = count > 1 ? `${state.stumps.map(d => d + '″').join(' + ')} = ${totalInches}″` : `${totalInches}″`;
   updateBookingEstimate(
+    needsCall ? 'Call for estimate' : tier.name,
     `${tier.name} (${tier.service}) · ${count} stump${count > 1 ? 's' : ''}: ${sizes} · ` +
     `${state.distance === 'far' ? 'more than' : 'within'} 30 mi of Spokane Valley · ` +
     (needsCall ? `needs a call (${reasons.join(' ')})` : `est. ${formatCurrency(priceFor(state.tier, totalInches))}`)
   );
 }
 
-// Send the estimate to the GoHighLevel booking form as the hidden "Website Estimate"
-// field (query key website_estimate), so it's saved on the contact with the booking.
+// Send the estimate to GoHighLevel with the booking.
+// - website_estimate: read by a custom booking form's hidden "Website Estimate" field, if one is attached.
+// - utm_* params: GHL saves these as the contact's attribution (Source / UTM Content), so the
+//   estimate shows on the contact even with the default form. The embed script reads them from
+//   this page's URL when the calendar loads, so the page URL is updated right before each reload.
 // Reloading the calendar resets it, so wait until the visitor stops adjusting the
 // calculator, and never reload once they've clicked into the calendar.
 const BOOKING_URL = 'https://api.leadconnectorhq.com/widget/booking/4DfR5LlIdesK0LKQRszZ';
@@ -168,19 +172,35 @@ const bookingLink = document.querySelector('.book-fallback a');
 let bookingFrameTimer;
 let bookingFrameInitialized = false;
 let pendingBookingUrl = null;
+let pendingBookingParams = null;
+
+function estimateParams(tierName, text) {
+  return new URLSearchParams({
+    utm_source: 'website',
+    utm_medium: 'price-calculator',
+    utm_campaign: tierName,
+    utm_content: text,
+    website_estimate: text
+  });
+}
 
 function loadPendingBookingUrl() {
   clearTimeout(bookingFrameTimer);
   if (!pendingBookingUrl || document.activeElement === bookingFrame) return;
+  try {
+    history.replaceState(history.state, '', `${location.pathname}?${pendingBookingParams}${location.hash}`);
+  } catch (e) { /* attribution is best-effort */ }
   bookingFrame.src = pendingBookingUrl;
   pendingBookingUrl = null;
 }
 
-function updateBookingEstimate(text) {
-  const url = `${BOOKING_URL}?website_estimate=${encodeURIComponent(text)}`;
+function updateBookingEstimate(tierName, text) {
+  const params = estimateParams(tierName, text);
+  const url = `${BOOKING_URL}?${params}`;
   if (bookingLink) bookingLink.href = url;
   if (!bookingFrame || bookingFrame.src === url) return;
   pendingBookingUrl = url;
+  pendingBookingParams = params;
   if (!bookingFrameInitialized) {
     bookingFrameInitialized = true;
     loadPendingBookingUrl();
