@@ -316,6 +316,19 @@ main .accent { color: var(--orange-dark); }
   cursor: pointer;
 }
 .hero-video-toggle:hover { background: rgba(0,0,0,.75); }
+.hero-call, .scroll-cue { display: none; }
+.scroll-cue {
+  width: 44px;
+  height: 44px;
+  margin: 6px auto 0;
+  color: var(--gold);
+  animation: scroll-bounce 1.6s ease-in-out infinite;
+}
+.scroll-cue svg { width: 100%; height: 100%; }
+@keyframes scroll-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(8px); }
+}
 
 /* Trust strip */
 .trust-strip {
@@ -748,6 +761,7 @@ main .accent { color: var(--orange-dark); }
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
+  .scroll-cue { animation: none; }
   .btn, .price-card { transition: none; }
   .btn:hover, .price-card:hover { transform: none; }
 }
@@ -826,14 +840,24 @@ main .accent { color: var(--orange-dark); }
   .btn-compact { padding: 8px 12px; font-size: .8rem; }
 }
 
-/* Phones: keep the hero video and the trust strip on the first screen */
+/* Phones: the video leads the first screen, with just the two buttons and a scroll cue,
+   and the trust strip still visible. The headline stays for search engines and screen readers. */
 @media (max-width: 640px) {
-  .hero-inner { padding-top: 16px; padding-bottom: 16px; gap: 12px; }
-  .hero .eyebrow { margin-bottom: 6px; font-size: .85rem; }
-  .hero-sub { font-size: .95rem; margin: 8px auto 0; }
-  .hero-actions { margin: 14px 0 0; gap: 10px; }
-  .hero-points { display: none; }
-  .hero-video { height: min(calc(100svh - 580px), 420px); min-height: 150px; border-radius: 18px; border-width: 3px; }
+  .hero-inner { padding-top: 16px; padding-bottom: 8px; gap: 14px; }
+  .hero-art { order: -1; margin-top: 0; }
+  .hero .eyebrow, .hero-sub, .hero-points, .hero-book { display: none; }
+  .hero h1 {
+    position: absolute;
+    width: 1px; height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+  .hero-actions { margin: 0; gap: 10px; justify-content: center; flex-wrap: nowrap; }
+  .hero-actions .btn { flex: 1; max-width: 180px; }
+  .hero-call { display: inline-flex; justify-content: center; }
+  .scroll-cue { display: block; margin-top: 0; }
+  .hero-video { height: min(calc(100svh - 360px), 560px); min-height: 220px; border-radius: 18px; border-width: 3px; }
   .trust-strip-inner {
     display: grid;
     grid-template-columns: 1fr 1fr;
