@@ -860,6 +860,8 @@ main .accent { color: var(--orange-dark); }
   .btn-compact { padding: 8px 12px; font-size: .8rem; }
 }
 
+.footer-banner { width: 100%; max-width: 360px; height: auto; border-radius: 14px; margin: 0 auto 18px; display: block; }
+
 /* Phones: the video leads the first screen, with just the two buttons and a scroll cue,
    and the trust strip still visible. The headline stays for search engines and screen readers. */
 @media (max-width: 640px) {
