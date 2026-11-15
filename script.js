@@ -189,14 +189,18 @@ let bookingFrameInitialized = false;
 let pendingBookingUrl = null;
 let pendingBookingParams = null;
 
+// Keep whatever tracking the visitor arrived with (e.g. ?utm_source=google, gclid, fbclid)
+// so GHL still credits the real source. Only fill in source/medium/campaign when missing.
+const incomingParams = new URLSearchParams(location.search);
+
 function estimateParams(tierName, text) {
-  return new URLSearchParams({
-    utm_source: 'website',
-    utm_medium: 'price-calculator',
-    utm_campaign: tierName,
-    utm_content: text,
-    website_estimate: text
-  });
+  const params = new URLSearchParams(incomingParams);
+  if (!params.has('utm_source')) params.set('utm_source', 'website');
+  if (!params.has('utm_medium')) params.set('utm_medium', 'price-calculator');
+  if (!params.has('utm_campaign')) params.set('utm_campaign', tierName);
+  params.set('utm_content', text);
+  params.set('website_estimate', text);
+  return params;
 }
 
 function loadPendingBookingUrl() {
@@ -213,7 +217,7 @@ function updateBookingEstimate(tierName, text) {
   const params = estimateParams(tierName, text);
   const url = `${BOOKING_URL}?${params}`;
   if (bookingLink) bookingLink.href = url;
-  if (!bookingFrame || bookingFrame.src === url) return;
+  if (!bookingFrame || bookingFrame.getAttribute('src') === url) return;
   pendingBookingUrl = url;
   pendingBookingParams = params;
   if (!bookingFrameInitialized) {
@@ -273,7 +277,14 @@ if (bookFallback) {
   window.addEventListener('message', (e) => {
     if (!/^https:\/\/([a-z0-9-]+\.)*leadconnectorhq\.com$/.test(e.origin)) return;
     const type = Array.isArray(e.data) ? e.data[0] : e.data;
-    if (type === 'highlevel.setHeight') calendarRendered = true;
+    if (type === 'highlevel.setHeight') {
+      calendarRendered = true;
+      // A slow connection can render the calendar after the 8s check; undo the warning.
+      if (bookFallback.classList.contains('is-stuck')) {
+        bookFallback.classList.remove('is-stuck');
+        document.getElementById('book-fallback-text').textContent = 'Calendar not showing?';
+      }
+    }
   });
   setTimeout(() => {
     if (calendarRendered) return;

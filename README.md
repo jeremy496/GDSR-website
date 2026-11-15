@@ -6,19 +6,17 @@ vendor account that can delete your data again.
 
 ## What's in here
 
-- `index.html` — the whole site: header/nav, hero, trust strip, feature
-  intro, "Choose Your Level" pricing with a live diameter-based estimate,
-  Meet Leo section, service area + map, testimonials (placeholders — see
-  below), contact/quote form, final call-to-action, footer
+- `index.html` — the whole site: header/nav, hero video, trust strip,
+  pricing calculator with Good/Better/Best tiers, online booking (GoHighLevel
+  calendar), why-choose-us, Meet the Team, service area + map, final
+  call-to-action, footer
 - `styles.css` — all styling
-- `script.js` — mobile menu, the live price slider, and the contact form
-  submit handler
-- `images/` — logo and photo assets:
-  - `leo-headshot.png` — Leo's square headshot (header + final CTA)
-  - `leo-helmet.png` — Leo in his GDSR helmet (Meet Leo section)
-  - `hero-leo-illustration.png` — the mascot illustration used in the hero
-  - `logo-wordmark.png` — the horizontal text logo (footer)
-  - `favicon-32.png`, `favicon-192.png`, `favicon-512.png` — browser tab icon
+- `script.js` — mobile menu, hero video pause button, the pricing calculator,
+  and passing the estimate to the booking calendar
+- `about.html` — sends the old `/about` address (still in Google) to the homepage
+- `404.html` — friendly "page not found" screen that returns visitors home
+- `robots.txt`, `sitemap.xml` — help Google find and index the site
+- `images/` — photos, logos, favicons and the hero video
 - `CNAME` — tells GitHub Pages this site should answer to
   `goldendoodlestumpremoval.com`
 
@@ -47,40 +45,20 @@ repo). Check **Enforce HTTPS** once it's available.
 
 DNS changes can take anywhere from a few minutes to a few hours to kick in.
 
-## 3. Make the quote form actually send you email
+## 3. Booking
 
-The form in `index.html` posts to Formspree, a free service that turns a
-plain HTML form into working email notifications — no backend required
-(GitHub Pages can't run server code).
-
-1. Go to formspree.io and make a free account with
-   jeremy@goldendoodlestumpremoval.com.
-2. Create a new form, copy the endpoint it gives you (looks like
-   `https://formspree.io/f/abcdwxyz`).
-3. In `index.html`, find this line (in the Contact section):
-   `<form class="contact-form" id="quote-form" action="https://formspree.io/f/YOUR_FORM_ID" method="POST">`
-   and replace `YOUR_FORM_ID` with your real endpoint.
-4. Commit the change (directly in the GitHub file editor, or however you
-   prefer).
-
-Until you do this, the form will show an error message — the phone/text/email
-links above the form work immediately either way.
+Bookings go through the GoHighLevel calendar embedded in the "Book online"
+section. The visitor's estimate from the pricing calculator is sent along with
+the booking (as UTM tags and a `website_estimate` field), so it shows on the
+contact in GoHighLevel. If the visitor arrived from an ad or link with its own
+`utm_source`/`utm_medium`/`utm_campaign`, those are kept.
 
 ## 4. Content notes / things to double-check
 
-- Pricing shown is calculated live from the diameter slider: $10/inch, $250
-  minimum per stump, with a multiplier per tier (Basic Grind ×1, Grind +
-  Cleanup ×1.15, Full Removal + Mulch ×1.35). Double-check these multipliers
-  match what you actually want to charge — they're an estimate based on your
-  known $10/inch, $250-minimum rule since the exact historical tier
-  surcharges weren't available when this was rebuilt.
+- Pricing is set in `script.js` (`RATE_PER_INCH` and `TIERS`): $10 per inch of
+  total diameter, Good ×1 ($250 minimum), Better ×1.15 ($275 minimum), Best
+  ×1.35 ($300 minimum). Minimums apply per visit. More than 3 stumps, stumps
+  over 48", or jobs over 30 miles from Spokane Valley show "Call for estimate".
 - Business phone used throughout: (509) 479-4685.
 - License number shown: WA L&I Contractor #GOLDESR741MO.
-- Service area copy says "Spokane, WA and the surrounding area" (not North
-  Idaho) since licensing there wasn't confirmed — update this if that's
-  changed.
-- The testimonials section is intentionally placeholder cards with
-  instructions, not fake reviews — swap them for real customer quotes as you
-  get them.
-- Add real job photos when you have them — drop new images into `images/`
-  and reference them in `index.html`.
+- Service area: Spokane and within 30 miles of Spokane Valley.
